@@ -5,8 +5,8 @@
   "description": "Minimal verified-user shared file cloud",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "admin": "node server.js"
+    "start": "node --env-file=.env server.js",
+    "admin": "node --env-file=.env server.js"
   },
   "engines": {
     "node": ">=20"
