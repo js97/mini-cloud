@@ -1,0 +1,9 @@
+shared_files/*
+data/*
+.env*
+data/*.tmp
+!*.example
+!*.gitkeep
+**node_modules/
+*.pyc
+

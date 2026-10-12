@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini Cloud — Login</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="panel narrow">
+    <h1>Mini Cloud</h1>
+    <p class="muted">Sign in to access shared files.</p>
+    <% if (error) { %><p class="alert error"><%= error %></p><% } %>
+    <% if (notice) { %><p class="alert"><%= notice %></p><% } %>
+    <% if (typeof queryNotice !== "undefined" && queryNotice) { %><p class="alert"><%= queryNotice %></p><% } %>
+    <form method="post" action="/login">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" maxlength="64" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" required>
+      <button type="submit">Log in</button>
+    </form>
+  </main>
+</body>
+</html>

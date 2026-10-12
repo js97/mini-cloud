@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini Cloud — Shared files</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="panel">
+    <header class="topbar">
+      <div><h1>Mini Cloud</h1><p class="muted">Shared folder · signed in as <strong><%= username %></strong></p></div>
+      <div class="actions">
+        <a class="button secondary" href="/change-password">Change password</a>
+        <form method="post" action="/logout">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button class="secondary" type="submit">Log out</button>
+        </form>
+      </div>
+    </header>
+
+    <% if (message) { %><p class="alert"><%= message %></p><% } %>
+
+    <section>
+      <h2>Upload a file</h2>
+      <form method="post" action="/upload" enctype="multipart/form-data" class="upload-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="file" name="file" required>
+        <button type="submit">Upload</button>
+      </form>
+      <p class="muted small">Maximum file size: 100 MB. Uploaded files are shared with every verified user.</p>
+    </section>
+
+    <section>
+      <h2>Shared files <span class="count"><%= files.length %></span></h2>
+      <% if (files.length) { %>
+        <div class="file-list">
+          <% files.forEach((file) => { %>
+            <article class="file-row">
+              <div class="file-icon" aria-hidden="true">↧</div>
+              <div class="file-info">
+                <div class="filename"><%= file.originalName %></div>
+                <div class="muted small">Uploaded by <%= file.uploadedBy %> · <%= new Date(file.uploadedAt).toLocaleString() %> · <%= (file.size / 1024 / 1024).toFixed(2) %> MB</div>
+              </div>
+              <a class="button" href="/download/<%= file.id %>">Download</a>
+            </article>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <p class="empty">No files yet. Upload a file to share it with the group.</p>
+      <% } %>
+    </section>
+  </main>
+</body>
+</html>
