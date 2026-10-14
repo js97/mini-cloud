@@ -34,3 +34,26 @@ button.secondary, .button.secondary { background: #edf1f7; color: #273449; }
 .empty { padding: 22px; text-align: center; color: #667085; background: #f8faff; border-radius: 12px; }
 .back { display: inline-block; margin-bottom: 22px; color: #245ce2; text-decoration: none; }
 @media (max-width: 600px) { body { padding: 16px 10px; } .panel { padding: 22px 17px; } .topbar { align-items: flex-start; flex-direction: column; } .actions { flex-wrap: wrap; } .file-row { align-items: flex-start; flex-wrap: wrap; } .file-info { flex-basis: calc(100% - 60px); } .file-row .button { margin-left: 56px; } }
+/* Actions for each shared file */
+.file-row .actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.file-row .actions form {
+  margin: 0;
+}
+
+.file-row .actions form button {
+  margin: 0;
+}
+
+/* Keep file actions usable on narrow screens */
+@media (max-width: 600px) {
+  .file-row .actions {
+    margin-left: 56px;
+  }
+}

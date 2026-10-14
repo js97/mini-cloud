@@ -230,6 +230,58 @@ app.get("/download/:id", requireVerified, (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+app.post("/delete/:id", requireVerified, requireCsrf, (req, res, next) => {
+  const id = req.params.id;
+
+  // Validate the file ID.
+  if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    return res.sendStatus(404);
+  }
+
+  try {
+    const files = getFiles();
+    const record = files[id];
+
+    // The file must exist and have a valid stored filename.
+    if (!record ||
+        typeof record.storageName !== "string" ||
+        path.basename(record.storageName) !== record.storageName) {
+      return res.sendStatus(404);
+    }
+
+    // Only the user who uploaded the file may delete it.
+    if (record.uploadedBy !== req.session.username) {
+      return res.status(403).send("You can only delete files you uploaded.");
+    }
+
+    const diskPath = path.join(UPLOAD_DIR, record.storageName);
+
+    // Remove the record from the shared-file index first.
+    delete files[id];
+    writeJsonAtomic(FILES_FILE, files);
+
+    // Remove the physical file from disk.
+    try {
+      fs.rmSync(diskPath, { force: true });
+    } catch (cleanupErr) {
+      console.error("Could not delete stored file:", cleanupErr.message);
+
+      return res.redirect(
+        "/files?message=" +
+        encodeURIComponent(
+          "File removed from the shared list, but storage cleanup failed. Contact the administrator."
+        )
+      );
+    }
+
+    return res.redirect(
+      "/files?message=" + encodeURIComponent("File deleted successfully.")
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.get("/change-password", requireVerified, (_req, res) => res.render("change-password", { error: "", success: "" }));
 
 app.post("/change-password", requireVerified, requireCsrf, async (req, res, next) => {

@@ -64,7 +64,18 @@
                   <%= (file.size / 1024 / 1024).toFixed(2) %> MB
                 </div>
               </div>
-              <a class="button" href="/download/<%= file.id %>">Download</a>
+              <div class="actions">
+                <a class="button" href="/download/<%= file.id %>">Download</a>
+
+                <% if (file.uploadedBy === username) { %>
+                  <form method="post"
+                        action="/delete/<%= file.id %>"
+                        onsubmit="return confirm('Are you sure you want to permanently delete this file for everyone?');">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button class="secondary" type="submit">Delete</button>
+                  </form>
+                <% } %>
+            </div>
             </article>
           <% }); %>
         </div>
