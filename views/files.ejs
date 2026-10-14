@@ -9,7 +9,10 @@
 <body>
   <main class="panel">
     <header class="topbar">
-      <div><h1>Mini Cloud</h1><p class="muted">Shared folder · signed in as <strong><%= username %></strong></p></div>
+      <div>
+        <h1>Mini Cloud</h1>
+        <p class="muted">Shared folder · signed in as <strong><%= username %></strong></p>
+      </div>
       <div class="actions">
         <a class="button secondary" href="/change-password">Change password</a>
         <form method="post" action="/logout">
@@ -19,20 +22,35 @@
       </div>
     </header>
 
-    <% if (message) { %><p class="alert"><%= message %></p><% } %>
+    <% if (message) { %>
+      <p class="alert"><%= message %></p>
+    <% } %>
 
     <section>
       <h2>Upload a file</h2>
-      <form method="post" action="/upload" enctype="multipart/form-data" class="upload-form">
+
+      <form id="upload-form" method="post" action="/upload"
+            enctype="multipart/form-data" class="upload-form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <input type="file" name="file" required>
-        <button type="submit">Upload</button>
+        <input id="upload-file" type="file" name="file" required>
+        <button id="upload-button" type="submit">Upload</button>
       </form>
-      <p class="muted small">Maximum file size: 100 MB. Uploaded files are shared with every verified user.</p>
+
+      <p class="muted small">
+        Maximum file size: 100 MB. Uploaded files are shared with every verified user.
+      </p>
+
+      <div id="upload-status" hidden aria-live="polite">
+        <p id="upload-message" role="status">Preparing upload…</p>
+        <progress id="upload-progress" max="100" value="0"
+                  style="width: 100%;"></progress>
+        <p id="upload-details" class="muted small">0%</p>
+      </div>
     </section>
 
     <section>
       <h2>Shared files <span class="count"><%= files.length %></span></h2>
+
       <% if (files.length) { %>
         <div class="file-list">
           <% files.forEach((file) => { %>
@@ -40,7 +58,11 @@
               <div class="file-icon" aria-hidden="true">↧</div>
               <div class="file-info">
                 <div class="filename"><%= file.originalName %></div>
-                <div class="muted small">Uploaded by <%= file.uploadedBy %> · <%= new Date(file.uploadedAt).toLocaleString() %> · <%= (file.size / 1024 / 1024).toFixed(2) %> MB</div>
+                <div class="muted small">
+                  Uploaded by <%= file.uploadedBy %> ·
+                  <%= new Date(file.uploadedAt).toLocaleString() %> ·
+                  <%= (file.size / 1024 / 1024).toFixed(2) %> MB
+                </div>
               </div>
               <a class="button" href="/download/<%= file.id %>">Download</a>
             </article>
@@ -51,5 +73,128 @@
       <% } %>
     </section>
   </main>
+
+  <script>
+    (() => {
+      const form = document.getElementById("upload-form");
+      const fileInput = document.getElementById("upload-file");
+      const button = document.getElementById("upload-button");
+      const status = document.getElementById("upload-status");
+      const message = document.getElementById("upload-message");
+      const progress = document.getElementById("upload-progress");
+      const details = document.getElementById("upload-details");
+
+      const formatBytes = (bytes) => {
+        if (bytes < 1024 * 1024) {
+          return (bytes / 1024).toFixed(1) + " KB";
+        }
+        return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+      };
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!fileInput.files.length) {
+          fileInput.reportValidity();
+          return;
+        }
+
+        const file = fileInput.files[0];
+
+        // Fail early if the selected file exceeds 100 MiB.
+        const maxSize = 100 * 1024 * 1024;
+        if (file.size > maxSize) {
+          status.hidden = false;
+          message.textContent = "The selected file exceeds the 100 MiB limit.";
+          details.textContent = "Choose a smaller file.";
+          progress.value = 0;
+          return;
+        }
+
+        const xhr = new XMLHttpRequest();
+        const data = new FormData(form);
+
+        status.hidden = false;
+        progress.value = 0;
+        details.textContent = "0%";
+        message.textContent = "Uploading " + file.name + "…";
+        button.disabled = true;
+        fileInput.disabled = true;
+
+        xhr.open("POST", form.action);
+
+        xhr.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.floor(
+              (event.loaded / event.total) * 100
+            );
+
+            progress.value = percent;
+            details.textContent =
+              percent + "% · " + formatBytes(event.loaded) +
+              " of " + formatBytes(event.total);
+
+            message.textContent = percent === 100
+              ? "Upload sent. Waiting for the server to finish saving…"
+              : "Uploading " + file.name + "…";
+          } else {
+            message.textContent =
+              "Uploading " + file.name + "… " +
+              formatBytes(event.loaded) + " sent";
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          let finalPath = "";
+
+          try {
+            finalPath = new URL(xhr.responseURL).pathname;
+          } catch (_) {}
+
+          if (
+            xhr.status >= 200 &&
+            xhr.status < 300 &&
+            finalPath === "/files"
+          ) {
+            message.textContent = "Upload successful. Refreshing file list…";
+            window.location.assign(xhr.responseURL);
+            return;
+          }
+
+          if (xhr.status === 413) {
+            message.textContent =
+              "Upload rejected: the server or proxy size limit was exceeded.";
+          } else if (xhr.status === 400) {
+            message.textContent =
+              "Upload failed. Check the selected file and try again.";
+          } else if (xhr.status === 403) {
+            message.textContent =
+              "Request rejected. Refresh the page and try again.";
+          } else {
+            message.textContent =
+              "Upload failed (HTTP " + xhr.status + "). Please try again.";
+          }
+
+          button.disabled = false;
+          fileInput.disabled = false;
+        });
+
+        xhr.addEventListener("error", () => {
+          message.textContent =
+            "Network error during upload. Check your connection and try again.";
+          button.disabled = false;
+          fileInput.disabled = false;
+        });
+
+        xhr.addEventListener("abort", () => {
+          message.textContent = "Upload cancelled.";
+          button.disabled = false;
+          fileInput.disabled = false;
+        });
+
+        xhr.send(data);
+      });
+    })();
+  </script>
 </body>
 </html>
