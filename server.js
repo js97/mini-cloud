@@ -14,6 +14,7 @@ const DATA_DIR = path.join(ROOT, "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const FILES_FILE = path.join(DATA_DIR, "files.json");
 const UPLOAD_DIR = path.join(ROOT, "shared_files");
+const MAX_FILE_SIZE = 220; // in MB
 
 for (const dir of [DATA_DIR, UPLOAD_DIR]) {
   fs.mkdirSync(dir, { recursive: true });
@@ -110,7 +111,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024, files: 1 },
+  limits: { fileSize: MAX_FILE_SIZE * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (!safeOriginalName(file.originalname)) return cb(new Error("Please choose a file with a valid filename."));
     cb(null, true);
@@ -175,7 +176,7 @@ app.post("/upload", requireVerified, (req, res, next) => {
   upload.single("file")(req, res, (err) => {
     if (err) {
       if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
-        return res.status(413).redirect("/files?message=" + encodeURIComponent("File is too large. Maximum size is 100 MB."));
+        return res.status(413).redirect("/files?message=" + encodeURIComponent(`File is too large. Maximum size is ${MAX_FILE_SIZE} MB.`));
       }
       if (err) return res.status(400).redirect("/files?message=" + encodeURIComponent(err.message || "Upload failed."));
       return next(err);
