@@ -168,7 +168,7 @@ app.get("/files", requireVerified, (req, res, next) => {
   try {
     const files = Object.entries(getFiles()).map(([id, record]) => ({ id, ...record }))
       .sort((a, b) => String(b.uploadedAt).localeCompare(String(a.uploadedAt)));
-    res.render("files", { files, message: req.query.message || "" });
+    res.render("files", { files, message: req.query.message || "", MAX_FILE_SIZE});
   } catch (err) { next(err); }
 });
 

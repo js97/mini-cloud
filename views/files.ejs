@@ -37,7 +37,8 @@
       </form>
 
       <p class="muted small">
-        Maximum file size: 100 MB. Uploaded files are shared with every verified user.
+          Maximum file size: <%= MAX_FILE_SIZE %> MB.
+          Uploaded files are shared with every verified user.
       </p>
 
       <div id="upload-status" hidden aria-live="polite">
@@ -112,15 +113,18 @@
 
         const file = fileInput.files[0];
 
-        // Fail early if the selected file exceeds 100 MiB.
-        const maxSize = 100 * 1024 * 1024;
+        // Fail early using the server-configured file size limit.
+        const maxSize = <%= MAX_FILE_SIZE %> * 1024 * 1024;
+
         if (file.size > maxSize) {
           status.hidden = false;
-          message.textContent = "The selected file exceeds the 100 MiB limit.";
+          message.textContent =
+            `The selected file exceeds the <%= MAX_FILE_SIZE %> MB limit.`;
           details.textContent = "Choose a smaller file.";
           progress.value = 0;
           return;
         }
+
 
         const xhr = new XMLHttpRequest();
         const data = new FormData(form);
